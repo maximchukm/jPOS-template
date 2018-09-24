@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<mux class="org.jpos.q2.iso.QMUX" name="jPOS-AUTORESPONDER" logger="Q2">
-    <in>jpos-receive</in>
-    <out>jpos-send</out>
-    <ready>jpos-channel.ready</ready>
-</mux>
