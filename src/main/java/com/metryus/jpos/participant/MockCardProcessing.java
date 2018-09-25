@@ -2,6 +2,8 @@ package com.metryus.jpos.participant;
 
 import com.metryus.jpos.domain.Card;
 import com.metryus.jpos.domain.ResponseStatus;
+import org.jpos.core.CardHolder;
+import org.jpos.core.InvalidCardException;
 import org.jpos.iso.ISOException;
 import org.jpos.iso.ISOMsg;
 import org.jpos.transaction.Context;
@@ -13,6 +15,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.jpos.transaction.ContextConstants.REQUEST;
 import static org.jpos.transaction.ContextConstants.RESPONSE;
@@ -34,7 +38,7 @@ public class MockCardProcessing implements TransactionParticipant {
     }
 
     public MockCardProcessing() {
-        cards.put("5218572220365428", new Card("5218572220365428", BigDecimal.valueOf(100), Card.Status.ACTIVE));
+        cards.put("516773******5875", new Card("516773******5875", BigDecimal.valueOf(100), Card.Status.ACTIVE));
     }
 
     @Override
@@ -71,7 +75,7 @@ public class MockCardProcessing implements TransactionParticipant {
             }
 
             setResponse(context, response);
-        } catch (ISOException e) {
+        } catch (Exception e) {
             log(context, e);
         }
     }
@@ -86,8 +90,8 @@ public class MockCardProcessing implements TransactionParticipant {
         return msg;
     }
 
-    private ISOMsg handleAuthorizationRequest(ISOMsg msg) throws ISOException {
-        Card card = cards.get(getAccountNumber(msg));
+    private ISOMsg handleAuthorizationRequest(ISOMsg msg) throws InvalidCardException, ISOException {
+        Card card = getCard(msg);
 
         BigDecimal amount = getTransactionAmount(msg);
 
@@ -108,8 +112,8 @@ public class MockCardProcessing implements TransactionParticipant {
         return msg;
     }
 
-    private ISOMsg handlePaymentFromAccount(ISOMsg msg) throws ISOException {
-        Card card = cards.get(getAccountNumber(msg));
+    private ISOMsg handlePaymentFromAccount(ISOMsg msg) throws InvalidCardException, ISOException {
+        Card card = getCard(msg);
 
         BigDecimal amount = getTransactionAmount(msg);
 
@@ -127,8 +131,22 @@ public class MockCardProcessing implements TransactionParticipant {
         return msg;
     }
 
-    private String getAccountNumber(ISOMsg msg) {
-        return msg.getString(2);
+    private Card getCard(ISOMsg msg) throws InvalidCardException, ISOException {
+        Card card;
+        if (msg.hasField(35)) {
+            Matcher matcher = Pattern.compile("^\\;(.{0,19})=(\\d{4})(.*)\\?").matcher(msg.getString(35));
+            if (matcher.find()) {
+                String pan = matcher.group(1);
+                String exp = matcher.group(2);
+                String trailer = matcher.group(3);
+                card = cards.get(pan);
+            } else {
+                throw new ISOException("invalid track2 data");
+            }
+        } else {
+            card = cards.get(new CardHolder(msg).getPAN());
+        }
+        return card;
     }
 
     private BigDecimal getTransactionAmount(ISOMsg msg) {
