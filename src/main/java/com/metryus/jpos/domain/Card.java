@@ -9,14 +9,14 @@ import java.math.BigDecimal;
 public class Card {
 
     private String number;
-    private BigDecimal balance;
+    private int balance;
     private Status status;
 
     public enum Status {
         ACTIVE, BLOCKED
     }
 
-    public Card(String number, BigDecimal balance, Status status) {
+    public Card(String number, int balance, Status status) {
         this.number = number;
         this.balance = balance;
         this.status = status;
@@ -26,7 +26,7 @@ public class Card {
         return number;
     }
 
-    public BigDecimal getBalance() {
+    public int getBalance() {
         return balance;
     }
 
@@ -34,7 +34,7 @@ public class Card {
         return status;
     }
 
-    public void debit(BigDecimal amount) {
-        balance = balance.add(amount.negate());
+    public void debit(int amount) {
+        balance = balance - amount;
     }
 }

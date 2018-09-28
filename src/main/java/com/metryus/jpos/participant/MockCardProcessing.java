@@ -10,7 +10,6 @@ import org.jpos.transaction.Context;
 import org.jpos.transaction.TransactionParticipant;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +37,7 @@ public class MockCardProcessing implements TransactionParticipant {
     }
 
     public MockCardProcessing() {
-        cards.put("516773******5875", new Card("516773******5875", BigDecimal.valueOf(100), Card.Status.ACTIVE));
+        cards.put("516773******5875", new Card("516773******5875", 10000, Card.Status.ACTIVE));
     }
 
     @Override
@@ -93,7 +92,7 @@ public class MockCardProcessing implements TransactionParticipant {
     private ISOMsg handleAuthorizationRequest(ISOMsg msg) throws InvalidCardException, ISOException {
         Card card = getCard(msg);
 
-        BigDecimal amount = getTransactionAmount(msg);
+        int amount = getTransactionAmount(msg);
 
         if (card.getStatus() == Card.Status.BLOCKED) {
             setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
@@ -103,7 +102,7 @@ public class MockCardProcessing implements TransactionParticipant {
             setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
         }
 
-        if (card.getBalance().compareTo(amount) >= 0) {
+        if (card.getBalance() - amount >= 0) {
             setResponseCode(msg, ResponseStatus.SUCCESSFUL);
         } else {
             setResponseCode(msg, ResponseStatus.INSUFFICIENT_FUNDS);
@@ -115,13 +114,13 @@ public class MockCardProcessing implements TransactionParticipant {
     private ISOMsg handlePaymentFromAccount(ISOMsg msg) throws InvalidCardException, ISOException {
         Card card = getCard(msg);
 
-        BigDecimal amount = getTransactionAmount(msg);
+        int amount = getTransactionAmount(msg);
 
         if (card.getStatus() == Card.Status.BLOCKED) {
             setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
         }
 
-        if (card.getBalance().compareTo(amount) < 0) {
+        if (card.getBalance() - amount <= 0) {
             setResponseCode(msg, ResponseStatus.INSUFFICIENT_FUNDS);
         } else {
             card.debit(amount);
@@ -149,8 +148,8 @@ public class MockCardProcessing implements TransactionParticipant {
         return card;
     }
 
-    private BigDecimal getTransactionAmount(ISOMsg msg) {
-        return new BigDecimal(msg.getString(4));
+    private int getTransactionAmount(ISOMsg msg) {
+        return Integer.parseInt(msg.getString(4));
     }
 
     private ISOMsg setResponseCode(ISOMsg msg, ResponseStatus responseStatus) {
