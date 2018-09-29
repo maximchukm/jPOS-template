@@ -10,6 +10,8 @@ import org.jpos.transaction.Context;
 import org.jpos.transaction.TransactionParticipant;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -92,10 +94,12 @@ public class MockCardProcessing implements TransactionParticipant {
 
         if (card.getStatus() == Card.Status.BLOCKED) {
             setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
+            return msg;
         }
 
-        if (card.getStatus() == Card.Status.BLOCKED) {
-            setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
+        if (card.getExpire().isBefore(LocalDate.now())) {
+            setResponseCode(msg, ResponseStatus.EXPIRED_CARD);
+            return msg;
         }
 
         if (card.getBalance() - amount >= 0) {
@@ -114,6 +118,12 @@ public class MockCardProcessing implements TransactionParticipant {
 
         if (card.getStatus() == Card.Status.BLOCKED) {
             setResponseCode(msg, ResponseStatus.RESTRICTED_CARD);
+            return msg;
+        }
+
+        if (card.getExpire().isBefore(LocalDate.now())) {
+            setResponseCode(msg, ResponseStatus.EXPIRED_CARD);
+            return msg;
         }
 
         if (card.getBalance() - amount <= 0) {
@@ -138,7 +148,7 @@ public class MockCardProcessing implements TransactionParticipant {
                 if (cards.containsKey(pan)) {
                     card = cards.get(pan);
                 } else {
-                    card = addCard(pan);
+                    card = addCard(pan, exp);
                 }
             } else {
                 throw new ISOException("invalid track2 data");
@@ -168,8 +178,9 @@ public class MockCardProcessing implements TransactionParticipant {
         ((Context) context).put(RESPONSE.toString(), msg);
     }
 
-    private Card addCard(String cardNumber) {
-        Card card = new Card(cardNumber, 10000, Card.Status.ACTIVE);
+    private Card addCard(String cardNumber, String expire) {
+        Card card = new Card(cardNumber, 10000, Card.Status.ACTIVE,
+                LocalDate.parse(expire + "01", DateTimeFormatter.ofPattern("yyMMdd")));
         cards.put(cardNumber, card);
         return card;
     }

@@ -1,6 +1,6 @@
 package com.metryus.jpos.domain;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * @author Maxim Maximchuk
@@ -11,15 +11,17 @@ public class Card {
     private String number;
     private int balance;
     private Status status;
+    private LocalDate expire;
 
     public enum Status {
         ACTIVE, BLOCKED
     }
 
-    public Card(String number, int balance, Status status) {
+    public Card(String number, int balance, Status status, LocalDate expire) {
         this.number = number;
         this.balance = balance;
         this.status = status;
+        this.expire = expire;
     }
 
     public String getNumber() {
@@ -32,6 +34,10 @@ public class Card {
 
     public Status getStatus() {
         return status;
+    }
+
+    public LocalDate getExpire() {
+        return expire;
     }
 
     public void debit(int amount) {
