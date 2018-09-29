@@ -36,10 +36,6 @@ public class MockCardProcessing implements TransactionParticipant {
         supportedMTI.add("0800");
     }
 
-    public MockCardProcessing() {
-        cards.put("516773******5875", new Card("516773******5875", 10000, Card.Status.ACTIVE));
-    }
-
     @Override
     public int prepare(long id, Serializable context) {
         try {
@@ -138,7 +134,12 @@ public class MockCardProcessing implements TransactionParticipant {
                 String pan = matcher.group(1);
                 String exp = matcher.group(2);
                 String trailer = matcher.group(3);
-                card = cards.get(pan);
+
+                if (cards.containsKey(pan)) {
+                    card = cards.get(pan);
+                } else {
+                    card = addCard(pan);
+                }
             } else {
                 throw new ISOException("invalid track2 data");
             }
@@ -165,6 +166,12 @@ public class MockCardProcessing implements TransactionParticipant {
     private void setResponse(Serializable context, ISOMsg msg) throws ISOException {
         msg.setResponseMTI();
         ((Context) context).put(RESPONSE.toString(), msg);
+    }
+
+    private Card addCard(String cardNumber) {
+        Card card = new Card(cardNumber, 10000, Card.Status.ACTIVE);
+        cards.put(cardNumber, card);
+        return card;
     }
 
     private void log(Serializable context, Object o) {
